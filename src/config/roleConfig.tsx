@@ -36,9 +36,9 @@ export const DEFAULT_ROUTE_BY_ROLE: Record<UserRole, string> = {
 
 // Danh sách route mà mỗi role được phép truy cập (dùng cho ProtectedRoute)
 export const ALLOWED_ROUTES_BY_ROLE: Record<UserRole, string[]> = {
-  admin: ["/dashboard", "/issue", "/verify", "/admin", "/certificates"],
-  issuer: ["/dashboard", "/issue", "/verify"],
-  student: ["/certificates", "/verify"],
+  admin: ["/dashboard", "/issue", "/verify", "/admin", "/certificates", "/profile"],
+  issuer: ["/dashboard", "/issue", "/verify", "/profile"],
+  student: ["/certificates", "/verify", "/profile"],
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {

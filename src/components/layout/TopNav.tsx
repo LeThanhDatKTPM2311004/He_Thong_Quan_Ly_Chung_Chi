@@ -95,11 +95,17 @@ export function TopNav({ onMenuToggle, showMenu }: { onMenuToggle: () => void; s
             <div className="px-4 py-3 border-b border-border">
               <p className="text-sm font-semibold">{user.name}</p>
               <p className="text-xs text-muted-foreground">
-                {ROLE_LABELS[user.role]} · Whitmore University
+                {ROLE_LABELS[user.role]} · CTUT University
               </p>
             </div>
             <div className="py-1">
-              <button className="w-full flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted transition-colors text-foreground">
+              <button
+                onClick={() => {
+                  setAvatarOpen(false);
+                  navigate("/profile");
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted transition-colors text-foreground"
+              >
                 <UserCog size={14} className="text-muted-foreground" /> Cài đặt hồ sơ
               </button>
               <button

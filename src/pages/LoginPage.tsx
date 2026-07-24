@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Award, Wallet, AlertTriangle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { DEFAULT_ROUTE_BY_ROLE } from "../config/roleConfig";
-import type { UserRole } from "../types";
 
 export function LoginPage() {
   const [tab, setTab] = useState<"wallet" | "email">("wallet");
@@ -15,7 +14,6 @@ export function LoginPage() {
     error,
     connectWallet,
     loginWithEmail,
-    loginAsDemoRole,
     clearError,
   } = useAuth();
   const navigate = useNavigate();
@@ -37,11 +35,6 @@ export function LoginPage() {
     e.preventDefault();
     clearError();
     await loginWithEmail(email, password);
-  }
-
-  async function handleDemoLogin(role: UserRole) {
-    clearError();
-    await loginAsDemoRole(role);
   }
 
   return (
@@ -177,25 +170,6 @@ export function LoginPage() {
                 </p>
               </form>
             )}
-          </div>
-        </div>
-
-        {/* Demo role switcher — chỉ hiện khi chưa có tài khoản thật trong database */}
-        <div className="mt-5 bg-white/5 border border-white/10 rounded-xl p-4">
-          <p className="text-xs text-blue-200 mb-2.5 text-center">
-            Demo — đăng nhập nhanh để xem giao diện theo từng vai trò (dùng khi chưa có tài khoản thật)
-          </p>
-          <div className="flex gap-2">
-            {(["admin", "issuer", "student"] as UserRole[]).map((role) => (
-              <button
-                key={role}
-                onClick={() => handleDemoLogin(role)}
-                disabled={isConnecting}
-                className="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-60 text-white text-xs font-medium capitalize transition-colors"
-              >
-                {role === "admin" ? "Quản trị" : role === "issuer" ? "Người cấp" : "Sinh viên"}
-              </button>
-            ))}
           </div>
         </div>
 

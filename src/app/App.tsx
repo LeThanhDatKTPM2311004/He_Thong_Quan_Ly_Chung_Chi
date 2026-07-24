@@ -8,6 +8,7 @@ import { IssueCertificatePage } from "../pages/IssueCertificatePage";
 import { MyCertificatesPage } from "../pages/MyCertificatesPage";
 import { VerifyCertificatePage } from "../pages/VerifyCertificatePage";
 import { AdminPage } from "../pages/AdminPage";
+import { ProfileSettingsPage } from "../pages/ProfileSettingsPage";
 import { DEFAULT_ROUTE_BY_ROLE } from "../config/roleConfig";
 
 function RootRedirect() {
@@ -33,6 +34,7 @@ function AppRoutes() {
         <Route path="/certificates" element={<MyCertificatesPage />} />
         <Route path="/verify" element={<VerifyCertificatePage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/profile" element={<ProfileSettingsPage />} />
       </Route>
 
       <Route path="/" element={<RootRedirect />} />
