@@ -24,7 +24,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </div>
           <div>
             <p className="text-white font-bold text-sm leading-tight">CertChain</p>
-            <p className="text-blue-300 text-[10px]">Whitmore University</p>
+            <p className="text-blue-300 text-[10px]">CTUT University</p>
           </div>
         </div>
 
@@ -56,8 +56,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/5">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <div>
-              <p className="text-white text-xs font-medium">Mainnet Connected</p>
-              <p className="text-blue-300 text-[10px] font-mono">Block #20,421,883</p>
+              <p className="text-white text-xs font-medium">Đã kết nối hệ thống</p>
             </div>
           </div>
         </div>

@@ -1,30 +1,17 @@
 // =============================================================================
-// LỚP GIẢ LẬP API CHỨNG CHỈ (CERTIFICATE)
+// LỚP GỌI API CHỨNG CHỈ (CERTIFICATE) — ĐÃ NỐI VÀO BACKEND THẬT
 // -----------------------------------------------------------------------------
-// Các hàm dưới đây mô phỏng việc gọi backend ASP.NET Core, backend sẽ dùng
-// Nethereum để gọi smart contract Solidity thật. Khi có backend, thay phần
-// bên trong mỗi hàm bằng fetch() gọi đúng endpoint, ví dụ:
-//
-//   export async function issueCertificate(data: IssueCertificatePayload) {
-//     const res = await fetch(`${API_BASE_URL}/api/certificates`, {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(data),
-//     });
-//     if (!res.ok) throw new Error("Không thể phát hành chứng chỉ");
-//     return (await res.json()) as { txHash: string };
-//   }
-//
-// Backend sau khi nhận request sẽ gọi Nethereum -> ký giao dịch -> gửi lên
-// smart contract -> trả về txHash để frontend theo dõi trạng thái.
+// Backend: Spring Boot (edu.ctut.certificate), xem CertificateController.java
+//   POST /api/certificates                  body: {studentId, fullName, degree, grade, issueDate, faculty}
+//   GET  /api/certificates/{txHash}/status
+//   GET  /api/certificates/verify?query=...
+//   POST /api/certificates/{certId}/revoke  body: {reason}
+//   GET  /api/certificates                  -> danh sách tất cả (Dashboard/Admin)
+//   GET  /api/certificates/student/{id}     -> chứng chỉ theo mã sinh viên
 // =============================================================================
 
-import { API_BASE_URL } from "./authApi";
-import type { CertStatus } from "../types";
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { apiFetch } from "./httpClient";
+import type { CertStatus, CertificateSummary, MyCertificate } from "../types";
 
 export interface IssueCertificatePayload {
   studentId: string;
@@ -42,15 +29,17 @@ export interface IssueTxResult {
 }
 
 /** Phát hành chứng chỉ mới lên blockchain (qua backend). */
-export async function issueCertificate(_payload: IssueCertificatePayload): Promise<IssueTxResult> {
-  await delay(1200); // mô phỏng thời gian gửi giao dịch
-  return { txHash: "0xf3e9...a1b2", status: "pending" };
+export async function issueCertificate(payload: IssueCertificatePayload): Promise<IssueTxResult> {
+  const { fileName: _fileName, ...body } = payload;
+  return apiFetch<IssueTxResult>("/api/certificates", {
+    method: "POST",
+    body,
+  });
 }
 
-/** Poll trạng thái giao dịch cho tới khi được xác nhận trên chain (mô phỏng). */
-export async function waitForConfirmation(_txHash: string): Promise<IssueTxResult> {
-  await delay(2500);
-  return { txHash: _txHash, status: "confirmed" };
+/** Kiểm tra trạng thái giao dịch theo txHash cho tới khi được xác nhận trên chain. */
+export async function waitForConfirmation(txHash: string): Promise<IssueTxResult> {
+  return apiFetch<IssueTxResult>(`/api/certificates/${encodeURIComponent(txHash)}/status`);
 }
 
 export interface VerifyResult {
@@ -67,25 +56,30 @@ export interface VerifyResult {
 
 /** Tra cứu / xác minh chứng chỉ theo mã hoặc transaction hash. */
 export async function verifyCertificate(query: string): Promise<VerifyResult | null> {
-  await delay(800);
   if (!query.trim()) return null;
-  return {
-    id: "CERT-2024-0891",
-    holder: "Amara Osei",
-    degree: "BSc Computer Science — First Class Honours",
-    issuedBy: "Whitmore University",
-    issueDate: "July 18, 2024",
-    faculty: "Faculty of Engineering & Computing",
-    txHash: "0xab12...f3e9",
-    ipfsDoc: "ipfs://Qm3Fa8...",
-    status: "confirmed",
-  };
+  return apiFetch<VerifyResult | null>(`/api/certificates/verify?query=${encodeURIComponent(query)}`);
 }
 
 /** Thu hồi chứng chỉ (chỉ Admin). */
-export async function revokeCertificate(_certId: string, _reason: string): Promise<{ success: boolean }> {
-  await delay(1000);
-  return { success: true };
+export async function revokeCertificate(certId: string, reason: string): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/api/certificates/${encodeURIComponent(certId)}/revoke`, {
+    method: "POST",
+    body: { reason },
+  });
 }
 
-void API_BASE_URL; // giữ import để dùng khi nối API thật
+/** Lấy toàn bộ chứng chỉ — dùng cho Dashboard / Admin Panel. */
+export async function getAllCertificates(): Promise<CertificateSummary[]> {
+  return apiFetch<CertificateSummary[]>("/api/certificates");
+}
+
+/**
+ * Lấy chứng chỉ theo mã sinh viên — dùng cho trang "Chứng chỉ của tôi".
+ * Lưu ý: hiện tại backend chưa trả về studentId khi đăng nhập (AuthUser chỉ có
+ * address/email/name/role), nên trang MyCertificatesPage tạm suy ra mã sinh
+ * viên từ email. Khi backend bổ sung studentId vào response đăng nhập, nên
+ * thay bằng giá trị đó cho chính xác.
+ */
+export async function getCertificatesByStudent(studentId: string): Promise<MyCertificate[]> {
+  return apiFetch<MyCertificate[]>(`/api/certificates/student/${encodeURIComponent(studentId)}`);
+}

@@ -56,13 +56,10 @@ export function TopNav({ onMenuToggle, showMenu }: { onMenuToggle: () => void; s
         {notifOpen && (
           <div className="absolute right-0 top-10 w-72 bg-white rounded-xl shadow-xl border border-border z-50 overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <span className="text-sm font-semibold">Notifications</span>
-              <span className="text-xs text-[#F59E0B] font-medium">3 new</span>
+              <span className="text-sm font-semibold">Thông báo</span>
             </div>
             {[
-              { text: "Certificate CERT-2024-0891 confirmed on-chain", time: "2m ago" },
-              { text: "New verification request from TechCorp", time: "1h ago" },
-              { text: "Pending certificate CERT-2024-0889 awaiting approval", time: "3h ago" },
+              { text: "Chưa có thông báo mới nào.", time: "" },
             ].map((n, i) => (
               <div key={i} className="px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer border-b border-border/50 last:border-0">
                 <div className="flex gap-2.5 items-start">
@@ -103,13 +100,13 @@ export function TopNav({ onMenuToggle, showMenu }: { onMenuToggle: () => void; s
             </div>
             <div className="py-1">
               <button className="w-full flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted transition-colors text-foreground">
-                <UserCog size={14} className="text-muted-foreground" /> Profile Settings
+                <UserCog size={14} className="text-muted-foreground" /> Cài đặt hồ sơ
               </button>
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-muted transition-colors text-red-600"
               >
-                <LogOut size={14} /> Sign Out
+                <LogOut size={14} /> Đăng xuất
               </button>
             </div>
           </div>

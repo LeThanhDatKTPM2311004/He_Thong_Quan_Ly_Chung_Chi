@@ -11,19 +11,19 @@ export interface NavItem {
 // Menu điều hướng riêng cho từng role
 export const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   admin: [
-    { path: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-    { path: "/issue", label: "Issue Certificate", icon: <FileBadge size={18} /> },
-    { path: "/verify", label: "Verify Certificate", icon: <ShieldCheck size={18} /> },
-    { path: "/admin", label: "Admin Panel", icon: <Settings size={18} /> },
+    { path: "/dashboard", label: "Bảng điều khiển", icon: <LayoutDashboard size={18} /> },
+    { path: "/issue", label: "Cấp chứng chỉ", icon: <FileBadge size={18} /> },
+    { path: "/verify", label: "Tra cứu chứng chỉ", icon: <ShieldCheck size={18} /> },
+    { path: "/admin", label: "Quản trị", icon: <Settings size={18} /> },
   ],
   issuer: [
-    { path: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-    { path: "/issue", label: "Issue Certificate", icon: <FileBadge size={18} /> },
-    { path: "/verify", label: "Verify Certificate", icon: <ShieldCheck size={18} /> },
+    { path: "/dashboard", label: "Bảng điều khiển", icon: <LayoutDashboard size={18} /> },
+    { path: "/issue", label: "Cấp chứng chỉ", icon: <FileBadge size={18} /> },
+    { path: "/verify", label: "Tra cứu chứng chỉ", icon: <ShieldCheck size={18} /> },
   ],
   student: [
-    { path: "/certificates", label: "My Certificates", icon: <Award size={18} /> },
-    { path: "/verify", label: "Verify Certificate", icon: <ShieldCheck size={18} /> },
+    { path: "/certificates", label: "Chứng chỉ của tôi", icon: <Award size={18} /> },
+    { path: "/verify", label: "Tra cứu chứng chỉ", icon: <ShieldCheck size={18} /> },
   ],
 };
 
@@ -42,7 +42,7 @@ export const ALLOWED_ROUTES_BY_ROLE: Record<UserRole, string[]> = {
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Administrator",
-  issuer: "Issuer",
-  student: "Student",
+  admin: "Quản trị viên",
+  issuer: "Người cấp chứng chỉ",
+  student: "Sinh viên",
 };

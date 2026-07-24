@@ -1,72 +1,48 @@
 // =============================================================================
-// LỚP GIẢ LẬP API XÁC THỰC (AUTH)
+// LỚP GỌI API XÁC THỰC (AUTH) — ĐÃ NỐI VÀO BACKEND THẬT
 // -----------------------------------------------------------------------------
-// File này hiện đang MÔ PHỎNG phản hồi từ backend để frontend chạy được ngay.
-// Khi backend ASP.NET Core (Nethereum) đã sẵn sàng, chỉ cần thay nội dung bên
-// trong 2 hàm loginWithWallet() và loginWithEmail() bằng lời gọi API thật,
-// ví dụ:
-//
-//   export async function loginWithWallet(address: string, signature: string) {
-//     const res = await fetch(`${API_BASE_URL}/api/auth/wallet-login`, {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ address, signature }),
-//     });
-//     if (!res.ok) throw new Error("Đăng nhập thất bại");
-//     return (await res.json()) as AuthUser;
-//   }
-//
-// Giao diện (interface) trả về giữ nguyên để không phải sửa lại UI.
+// Backend: Spring Boot (edu.ctut.certificate), xem AuthController.java
+//   POST /api/auth/wallet-login   body: { address }        -> AuthUser
+//   POST /api/auth/login          body: { email, password } -> AuthUser
+// Địa chỉ API cấu hình qua biến môi trường VITE_API_BASE_URL (file .env).
 // =============================================================================
 
 import type { AuthUser, UserRole } from "../types";
+import { apiFetch, API_BASE_URL } from "./httpClient";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000";
+export { API_BASE_URL };
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Bảng ánh xạ địa chỉ ví -> role, TẠM THỜI hardcode để demo khi chưa có backend.
-// Sau này bảng này sẽ nằm trong database/smart contract, backend sẽ trả về role tương ứng.
-const DEMO_WALLET_ROLES: Record<string, { role: UserRole; name: string }> = {
-  "0x3fa8c9a9e2b3d4f5a6b7c8d9e0f1a2b3c4d5e6f7": { role: "admin", name: "Dr. Chen Wei" },
-};
-
 /**
- * Đăng nhập bằng ví đã kết nối. Trong thực tế, backend sẽ:
- * 1. Kiểm tra chữ ký (signature) khớp với địa chỉ ví.
- * 2. Tra cứu role của địa chỉ ví (trong DB hoặc smart contract AccessControl).
- * 3. Trả về JWT token + thông tin user.
+ * Đăng nhập bằng ví đã kết nối (MetaMask).
+ * Backend sẽ tự tạo user mới với role "student" nếu địa chỉ ví chưa tồn tại.
  */
 export async function loginWithWallet(address: string): Promise<AuthUser> {
-  await delay(500); // mô phỏng độ trễ mạng
-  const normalized = address.toLowerCase();
-  const found = DEMO_WALLET_ROLES[normalized];
-  return {
-    address,
-    email: null,
-    name: found?.name ?? "Người dùng mới",
-    // Mặc định demo: ví chưa có trong bảng ánh xạ -> gán role student
-    role: found?.role ?? "student",
-  };
+  return apiFetch<AuthUser>("/api/auth/wallet-login", {
+    method: "POST",
+    body: { address },
+  });
 }
 
-/** Đăng nhập bằng email/mật khẩu (dành cho sinh viên) */
-export async function loginWithEmail(email: string, _password: string): Promise<AuthUser> {
-  await delay(500);
+/** Đăng nhập bằng email/mật khẩu (dành cho sinh viên). */
+export async function loginWithEmail(email: string, password: string): Promise<AuthUser> {
   if (!email.includes("@")) {
     throw new Error("Email không hợp lệ");
   }
-  return {
-    address: null,
-    email,
-    name: email.split("@")[0],
-    role: "student",
-  };
+  return apiFetch<AuthUser>("/api/auth/login", {
+    method: "POST",
+    body: { email, password },
+  });
 }
 
-/** Đăng nhập nhanh theo role — CHỈ DÙNG ĐỂ DEMO/TEST UI khi chưa có backend thật. */
+/**
+ * Đăng nhập nhanh theo role — CHỈ DÙNG ĐỂ DEMO/TEST giao diện khi backend
+ * chưa sẵn sàng hoặc chưa có tài khoản tương ứng trong database.
+ * Có thể xoá nút demo này ở LoginPage.tsx khi không cần nữa.
+ */
 export async function loginAsDemoRole(role: UserRole): Promise<AuthUser> {
   await delay(300);
   const names: Record<UserRole, string> = {

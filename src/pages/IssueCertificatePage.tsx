@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, CheckCircle2, RefreshCw, ExternalLink, Hash, BookOpen, AlertTriangle } from "lucide-react";
+import { Upload, CheckCircle2, RefreshCw, Hash, BookOpen, AlertTriangle } from "lucide-react";
 import { Modal } from "../components/common/Modal";
 import * as certificateApi from "../services/certificateApi";
 import type { IssueCertificatePayload } from "../services/certificateApi";
@@ -11,17 +11,23 @@ export function IssueCertificatePage() {
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState<IssueCertificatePayload>({
-    studentId: "STU-10234",
-    fullName: "Amara Osei",
+    studentId: "",
+    fullName: "",
     degree: "BSc Computer Science",
     grade: "First Class Honours",
-    issueDate: "2024-07-22",
-    faculty: "Faculty of Engineering & Computing",
+    issueDate: new Date().toISOString().slice(0, 10),
+    faculty: "",
   });
 
   function handleSubmit() {
+    if (!form.studentId || !form.fullName || !form.issueDate) {
+      setError("Vui lòng điền đầy đủ các trường bắt buộc (*).");
+      return;
+    }
+    setError(null);
     setModalOpen(true);
   }
 
@@ -29,12 +35,14 @@ export function IssueCertificatePage() {
     setModalOpen(false);
     setSubmitting(true);
     setTxStatus("pending");
+    setError(null);
     try {
       const result = await certificateApi.issueCertificate({ ...form, fileName });
       setTxHash(result.txHash);
       const confirmed = await certificateApi.waitForConfirmation(result.txHash);
       setTxStatus(confirmed.status === "confirmed" ? "confirmed" : "pending");
-    } catch {
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể phát hành chứng chỉ");
       setTxStatus(null);
     } finally {
       setSubmitting(false);
@@ -48,9 +56,16 @@ export function IssueCertificatePage() {
   return (
     <div className="p-6 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-foreground">Issue Certificate</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Publish a new academic certificate to the Ethereum blockchain.</p>
+        <h1 className="text-xl font-bold text-foreground">Cấp chứng chỉ</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Phát hành một chứng chỉ học thuật mới lên blockchain.</p>
       </div>
+
+      {error && (
+        <div className="mb-6 flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200">
+          <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-red-700 leading-relaxed">{error}</p>
+        </div>
+      )}
 
       {txStatus && (
         <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 border ${txStatus === "pending" ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}`}>
@@ -60,8 +75,8 @@ export function IssueCertificatePage() {
                 <RefreshCw size={16} className="text-amber-600 animate-spin" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-amber-800">Transaction Pending</p>
-                <p className="text-xs text-amber-600 font-mono mt-0.5">{txHash} — awaiting block confirmation...</p>
+                <p className="text-sm font-semibold text-amber-800">Giao dịch đang chờ xử lý</p>
+                <p className="text-xs text-amber-600 font-mono mt-0.5">{txHash} — đang chờ xác nhận trên chuỗi...</p>
               </div>
             </>
           ) : (
@@ -70,12 +85,9 @@ export function IssueCertificatePage() {
                 <CheckCircle2 size={16} className="text-emerald-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-emerald-800">Certificate Confirmed On-Chain</p>
-                <p className="text-xs text-emerald-600 font-mono mt-0.5">Block #20,421,884 · 12 confirmations</p>
+                <p className="text-sm font-semibold text-emerald-800">Chứng chỉ đã được xác nhận trên chuỗi</p>
+                <p className="text-xs text-emerald-600 font-mono mt-0.5">Mã giao dịch: {txHash}</p>
               </div>
-              <button className="flex items-center gap-1 text-xs text-emerald-700 hover:underline font-medium">
-                View <ExternalLink size={11} />
-              </button>
             </>
           )}
         </div>
@@ -84,23 +96,25 @@ export function IssueCertificatePage() {
       <div className="bg-white rounded-2xl border border-border shadow-sm p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1.5">Student ID <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-foreground block mb-1.5">Mã sinh viên <span className="text-red-500">*</span></label>
             <input
               value={form.studentId}
               onChange={(e) => updateField("studentId", e.target.value)}
+              placeholder="VD: STU-10234"
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] transition-all font-mono"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1.5">Full Name <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-foreground block mb-1.5">Họ và tên <span className="text-red-500">*</span></label>
             <input
               value={form.fullName}
               onChange={(e) => updateField("fullName", e.target.value)}
+              placeholder="Nguyễn Văn A"
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] transition-all"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1.5">Degree / Course <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-foreground block mb-1.5">Bằng cấp / Chuyên ngành <span className="text-red-500">*</span></label>
             <select
               value={form.degree}
               onChange={(e) => updateField("degree", e.target.value)}
@@ -114,7 +128,7 @@ export function IssueCertificatePage() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1.5">Grade / Classification</label>
+            <label className="text-sm font-medium text-foreground block mb-1.5">Xếp loại</label>
             <select
               value={form.grade}
               onChange={(e) => updateField("grade", e.target.value)}
@@ -128,7 +142,7 @@ export function IssueCertificatePage() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1.5">Issue Date <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-foreground block mb-1.5">Ngày cấp <span className="text-red-500">*</span></label>
             <input
               type="date"
               value={form.issueDate}
@@ -137,17 +151,18 @@ export function IssueCertificatePage() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1.5">Issuing Faculty</label>
+            <label className="text-sm font-medium text-foreground block mb-1.5">Khoa / Viện cấp</label>
             <input
               value={form.faculty}
               onChange={(e) => updateField("faculty", e.target.value)}
+              placeholder="VD: Khoa Công nghệ Thông tin"
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] transition-all"
             />
           </div>
         </div>
 
         <div>
-          <label className="text-sm font-medium text-foreground block mb-1.5">Certificate Document (PDF)</label>
+          <label className="text-sm font-medium text-foreground block mb-1.5">Tài liệu chứng chỉ (PDF)</label>
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -160,8 +175,8 @@ export function IssueCertificatePage() {
               <p className="text-sm font-medium text-[#1E3A8A]">{fileName}</p>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground">Drag & drop PDF here, or <span className="text-[#1E3A8A] font-medium">browse files</span></p>
-                <p className="text-xs text-muted-foreground mt-1">PDF up to 10MB — will be hashed and stored on IPFS</p>
+                <p className="text-sm text-muted-foreground">Kéo & thả file PDF vào đây, hoặc <span className="text-[#1E3A8A] font-medium">chọn file</span></p>
+                <p className="text-xs text-muted-foreground mt-1">PDF tối đa 10MB — sẽ được băm (hash) và lưu trữ</p>
               </>
             )}
           </div>
@@ -169,11 +184,7 @@ export function IssueCertificatePage() {
 
         <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
           <Hash size={14} className="text-muted-foreground shrink-0" />
-          <div className="flex gap-4 text-xs text-muted-foreground">
-            <span>Est. gas: <span className="font-mono text-foreground font-medium">0.0042 ETH</span></span>
-            <span>≈ <span className="text-foreground font-medium">$12.40</span></span>
-            <span>Network: <span className="text-emerald-600 font-medium">Mainnet</span></span>
-          </div>
+          <span className="text-xs text-muted-foreground">Chứng chỉ sẽ được băm (SHA-256) và ghi vào chuỗi khối nội bộ của hệ thống.</span>
         </div>
 
         <div className="flex items-center gap-3 pt-1">
@@ -182,24 +193,21 @@ export function IssueCertificatePage() {
             disabled={submitting}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] disabled:opacity-60 text-white font-semibold text-sm transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
           >
-            <BookOpen size={16} /> Issue to Blockchain
-          </button>
-          <button className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors text-muted-foreground">
-            Save Draft
+            <BookOpen size={16} /> {submitting ? "Đang xử lý..." : "Cấp lên Blockchain"}
           </button>
         </div>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Confirm Certificate Issuance">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Xác nhận cấp chứng chỉ">
         <div className="space-y-4">
           <div className="flex items-start gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-200">
             <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
             <p className="text-sm text-amber-800 leading-relaxed">
-              <strong>This action cannot be undone.</strong> Once issued, the certificate will be permanently recorded on the Ethereum blockchain. A gas fee will be deducted from your connected wallet.
+              <strong>Hành động này không thể hoàn tác.</strong> Sau khi cấp, chứng chỉ sẽ được ghi lại vĩnh viễn trên blockchain.
             </p>
           </div>
           <div className="space-y-2 text-sm">
-            {[["Student", `${form.fullName} (${form.studentId})`], ["Degree", form.degree], ["Grade", form.grade], ["Est. Gas", "~0.0042 ETH (~$12.40)"]].map(([k, v]) => (
+            {[["Sinh viên", `${form.fullName} (${form.studentId})`], ["Bằng cấp", form.degree], ["Xếp loại", form.grade]].map(([k, v]) => (
               <div key={k} className="flex justify-between py-1.5 border-b border-border last:border-0">
                 <span className="text-muted-foreground">{k}</span>
                 <span className="font-medium text-foreground">{v}</span>
@@ -211,13 +219,13 @@ export function IssueCertificatePage() {
               onClick={handleConfirm}
               className="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold text-sm hover:bg-[#1e40af] transition-all"
             >
-              Confirm & Sign Transaction
+              Xác nhận & Ký giao dịch
             </button>
             <button
               onClick={() => setModalOpen(false)}
               className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
             >
-              Cancel
+              Huỷ
             </button>
           </div>
         </div>

@@ -56,7 +56,7 @@ export function LoginPage() {
             CTUT University
           </h1>
           <p className="text-blue-200 text-sm mt-1">
-            Certificate Management System
+            Hệ Thống Quản Lý Chứng Chỉ
           </p>
           <div className="flex items-center justify-center gap-1.5 mt-2">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -76,7 +76,7 @@ export function LoginPage() {
               }}
               className={`flex-1 py-3.5 text-sm font-medium transition-colors ${tab === "wallet" ? "bg-[#EFF6FF] text-[#1E3A8A] border-b-2 border-[#1E3A8A]" : "text-muted-foreground hover:text-foreground"}`}
             >
-              Connect Wallet
+              Kết nối ví
             </button>
             <button
               onClick={() => {
@@ -85,7 +85,7 @@ export function LoginPage() {
               }}
               className={`flex-1 py-3.5 text-sm font-medium transition-colors ${tab === "email" ? "bg-[#EFF6FF] text-[#1E3A8A] border-b-2 border-[#1E3A8A]" : "text-muted-foreground hover:text-foreground"}`}
             >
-              Email Login
+              Đăng nhập Email
             </button>
           </div>
 
@@ -103,8 +103,8 @@ export function LoginPage() {
             {tab === "wallet" ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                  Connect your wallet to access the blockchain certificate
-                  system. Admin and Issuer roles require wallet authentication.
+                  Kết nối ví của bạn để truy cập hệ thống chứng chỉ blockchain.
+                  Vai trò Quản trị viên và Người cấp chứng chỉ yêu cầu xác thực bằng ví.
                 </p>
                 <button
                   onClick={handleWalletConnect}
@@ -116,11 +116,11 @@ export function LoginPage() {
                     alt="MetaMask"
                     className="w-6 h-6"
                   />
-                  {isConnecting ? "Đang kết nối..." : "Connect with MetaMask"}
+                  {isConnecting ? "Đang kết nối..." : "Kết nối với MetaMask"}
                 </button>
                 <div className="relative flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground">or</span>
+                  <span className="text-xs text-muted-foreground">hoặc</span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
                 <button
@@ -135,24 +135,24 @@ export function LoginPage() {
             ) : (
               <form onSubmit={handleEmailLogin} className="space-y-4">
                 <p className="text-sm text-muted-foreground text-center">
-                  For students accessing their certificates.
+                  Dành cho sinh viên truy cập chứng chỉ của mình.
                 </p>
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">
-                    University Email
+                    Email trường
                   </label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@student.whitmore.edu"
+                    placeholder="ban@student.ctut.edu.vn"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-muted text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 focus:border-[#1E3A8A] transition-all"
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">
-                    Password
+                    Mật khẩu
                   </label>
                   <input
                     type="password"
@@ -168,11 +168,11 @@ export function LoginPage() {
                   disabled={isConnecting}
                   className="w-full py-3 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] disabled:opacity-60 text-white font-semibold text-sm transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  {isConnecting ? "Đang đăng nhập..." : "Sign In"}
+                  {isConnecting ? "Đang đăng nhập..." : "Đăng nhập"}
                 </button>
                 <p className="text-xs text-center text-muted-foreground">
                   <a href="#" className="text-[#1E3A8A] hover:underline">
-                    Forgot password?
+                    Quên mật khẩu?
                   </a>
                 </p>
               </form>
@@ -180,11 +180,10 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* Demo role switcher — chỉ hiện khi chưa có backend thật */}
+        {/* Demo role switcher — chỉ hiện khi chưa có tài khoản thật trong database */}
         <div className="mt-5 bg-white/5 border border-white/10 rounded-xl p-4">
           <p className="text-xs text-blue-200 mb-2.5 text-center">
-            Demo — đăng nhập nhanh để xem UI theo từng role (xoá khi có backend
-            thật)
+            Demo — đăng nhập nhanh để xem giao diện theo từng vai trò (dùng khi chưa có tài khoản thật)
           </p>
           <div className="flex gap-2">
             {(["admin", "issuer", "student"] as UserRole[]).map((role) => (
@@ -194,14 +193,14 @@ export function LoginPage() {
                 disabled={isConnecting}
                 className="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-60 text-white text-xs font-medium capitalize transition-colors"
               >
-                {role}
+                {role === "admin" ? "Quản trị" : role === "issuer" ? "Người cấp" : "Sinh viên"}
               </button>
             ))}
           </div>
         </div>
 
         <p className="text-center text-blue-200/60 text-xs mt-6">
-          Secured by Ethereum blockchain &bull; ERC-1155 Certificates
+          Bảo mật bởi công nghệ blockchain
         </p>
       </div>
     </div>
