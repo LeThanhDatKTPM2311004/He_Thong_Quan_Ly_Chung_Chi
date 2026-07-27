@@ -19,7 +19,9 @@ public class CertificateController {
     }
 
     @PostMapping
-    public Map<String, Object> issue(@RequestBody Map<String, String> body) throws Exception {
+    public Map<String, Object> issue(@RequestBody Map<String, String> body,
+            @RequestHeader(value = "X-User-Role", required = false) String role) throws Exception {
+        checkIssuerOrAdmin(role);
         CertificateBlock block = certificateService.issueCertificate(
                 body.get("studentId"), body.get("fullName"), body.get("degree"),
                 body.get("grade"), body.get("issueDate"), body.get("faculty"));
@@ -35,7 +37,8 @@ public class CertificateController {
     @GetMapping("/verify")
     public Object verify(@RequestParam String query) throws Exception {
         CertificateBlock block = certificateService.verifyCertificate(query);
-        if (block == null) return null;
+        if (block == null)
+            return null;
         return Map.of(
                 "id", block.getCertId(),
                 "holder", block.getFullName(),
@@ -45,12 +48,13 @@ public class CertificateController {
                 "faculty", block.getFaculty(),
                 "txHash", block.getTxHash(),
                 "ipfsDoc", block.getIpfsDoc(),
-                "status", block.getStatus().toString()
-        );
+                "status", block.getStatus().toString());
     }
 
     @PostMapping("/{certId}/revoke")
-    public Map<String, Object> revoke(@PathVariable String certId, @RequestBody Map<String, String> body) throws Exception {
+    public Map<String, Object> revoke(@PathVariable String certId, @RequestBody Map<String, String> body,
+            @RequestHeader(value = "X-User-Role", required = false) String role) throws Exception {
+        checkIssuerOrAdmin(role);
         boolean success = certificateService.revokeCertificate(certId, body.get("reason"));
         return Map.of("success", success);
     }
@@ -80,5 +84,11 @@ public class CertificateController {
             map.put("hash", block.getHash());
             return map;
         }).toList();
+    }
+
+    private void checkIssuerOrAdmin(String role) {
+        if (!"admin".equals(role) && !"issuer".equals(role)) {
+            throw new RuntimeException("Khong co quyen thuc hien thao tac nay");
+        }
     }
 }
