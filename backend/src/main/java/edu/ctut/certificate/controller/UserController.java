@@ -1,9 +1,9 @@
 package edu.ctut.certificate.controller;
 
-import edu.ctut.certificate.domain.AppUser;
 import edu.ctut.certificate.repository.AppUserRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,11 +20,11 @@ public class UserController {
     @GetMapping
     public List<Map<String, Object>> getAll() {
         return repository.findAll().stream().map(u -> {
-            Map<String, Object> map = new java.util.HashMap<>();
+            Map<String, Object> map = new HashMap<>();
             map.put("name", u.getName());
             map.put("email", u.getEmail() == null ? "" : u.getEmail());
             map.put("role", u.getRole().toString());
             return map;
         }).toList();
     }
-}           
+}

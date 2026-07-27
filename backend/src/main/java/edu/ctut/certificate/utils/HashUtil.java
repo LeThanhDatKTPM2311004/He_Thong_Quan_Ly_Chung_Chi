@@ -14,7 +14,7 @@ public class HashUtil {
             }
             return "0x" + sb.toString();
         } catch (Exception e) {
-            throw new RuntimeException("Không thể tính hash", e);
+            throw new RuntimeException("Khong the tinh hash", e);
         }
     }
 }

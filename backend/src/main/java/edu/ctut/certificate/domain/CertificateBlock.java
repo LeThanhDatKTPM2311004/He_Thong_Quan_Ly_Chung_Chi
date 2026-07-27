@@ -2,7 +2,6 @@ package edu.ctut.certificate.domain;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.time.Instant;
 
 @Entity
 @Table(name = "certificate_blocks")
@@ -12,7 +11,7 @@ public class CertificateBlock {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long blockIndex;
 
-    private String certId; // vd: CERT-2024-0891
+    private String certId;
     private String studentId;
     private String fullName;
     private String degree;
@@ -26,7 +25,7 @@ public class CertificateBlock {
 
     private String previousHash;
     private String hash;
-    private String txHash; // = hash, đặt tên vậy cho khớp FE
-    private String ipfsDoc; // giả lập, không dùng IPFS thật
+    private String txHash;
+    private String ipfsDoc;
     private Long timestamp;
 }

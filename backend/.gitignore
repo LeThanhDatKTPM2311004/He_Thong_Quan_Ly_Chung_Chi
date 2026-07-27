@@ -1,3 +1,6 @@
-﻿target/
+target/
 .mvn/
+.idea/
 *.class
+*.iml
+.vscode/
