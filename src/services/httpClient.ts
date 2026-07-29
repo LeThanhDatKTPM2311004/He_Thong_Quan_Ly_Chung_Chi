@@ -18,6 +18,20 @@ export class ApiError extends Error {
   }
 }
 
+// -----------------------------------------------------------------------------
+// Role của người dùng đang đăng nhập, dùng để gắn header "X-User-Role" cho
+// backend (xem CertificateController#issue/#revoke và UserController#updateRole,
+// cả 3 endpoint đều @RequestHeader("X-User-Role") để check quyền admin/issuer).
+// AuthContext gọi setCurrentUserRole() mỗi khi user đăng nhập/đăng xuất/đổi ví
+// để giá trị này luôn đồng bộ, vì apiFetch là hàm thuần (module-level), không
+// nằm trong React tree nên không thể tự đọc useContext.
+// -----------------------------------------------------------------------------
+let currentUserRole: string | null = null;
+
+export function setCurrentUserRole(role: string | null): void {
+  currentUserRole = role;
+}
+
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
@@ -35,6 +49,9 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
         "Content-Type": "application/json",
         // Bắt buộc để bỏ qua trang cảnh báo của ngrok free tier
         "ngrok-skip-browser-warning": "true",
+        // Gắn role hiện tại để backend check quyền (admin/issuer). Nếu chưa
+        // đăng nhập thì không gắn, backend sẽ tự trả lỗi "Khong co quyen...".
+        ...(currentUserRole ? { "X-User-Role": currentUserRole } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, ty
 import type { AuthUser, UserRole } from "../types";
 import { connectMetaMask, onAccountsChanged } from "../services/walletService";
 import * as authApi from "../services/authApi";
+import { setCurrentUserRole } from "../services/httpClient";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -80,6 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // chỉ ví hiện tại, không bị "đóng băng" giá trị cũ do closure của useEffect.
   const userRef = useRef(user);
   userRef.current = user;
+
+  // Đồng bộ role hiện tại xuống httpClient (module-level, ngoài React tree)
+  // mỗi khi user đăng nhập/đăng xuất/đổi vai trò, để mọi request POST/PUT
+  // (cấp chứng chỉ, thu hồi, gán role) tự động gắn đúng header X-User-Role
+  // mà backend yêu cầu. Thiếu bước này thì bấm "Cấp chứng chỉ"/"Thu hồi" sẽ
+  // luôn bị backend từ chối vì header rỗng.
+  useEffect(() => {
+    setCurrentUserRole(user?.role ?? null);
+  }, [user]);
 
   // Lắng nghe khi người dùng đổi tài khoản MetaMask đang active.
   // Trước đây hàm onAccountsChanged đã được viết trong walletService.ts
