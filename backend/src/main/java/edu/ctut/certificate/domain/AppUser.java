@@ -11,8 +11,8 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String address; // ví, có thể null
-    private String email; // có thể null
+    private String address;
+    private String email;
     private String password;
     private String name;
 

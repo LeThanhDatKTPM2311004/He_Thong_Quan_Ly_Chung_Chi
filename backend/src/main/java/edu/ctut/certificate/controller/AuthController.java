@@ -16,14 +16,12 @@ public class AuthController {
         this.authService = authService;
     }
 
-    // Khớp với authApi.loginWithWallet(address)
     @PostMapping("/wallet-login")
     public Map<String, Object> walletLogin(@RequestBody Map<String, String> body) {
         AppUser user = authService.loginWithWallet(body.get("address"));
         return toAuthUserResponse(user);
     }
 
-    // Khớp với authApi.loginWithEmail(email, password)
     @PostMapping("/login")
     public Map<String, Object> emailLogin(@RequestBody Map<String, String> body) {
         AppUser user = authService.loginWithEmail(body.get("email"), body.get("password"));
@@ -35,6 +33,7 @@ public class AuthController {
                 "address", user.getAddress() == null ? "" : user.getAddress(),
                 "email", user.getEmail() == null ? "" : user.getEmail(),
                 "name", user.getName(),
-                "role", user.getRole().toString());
+                "role", user.getRole().toString()
+        );
     }
 }

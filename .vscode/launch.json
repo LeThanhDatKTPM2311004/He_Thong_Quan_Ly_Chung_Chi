@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "HashGen",
+            "request": "launch",
+            "mainClass": "edu.ctut.certificate.HashGen",
+            "projectName": "certificate-blockchain-service"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-CertificateBlockchainServiceApplication<certificate-blockchain-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "edu.ctut.certificate.CertificateBlockchainServiceApplication",
+            "projectName": "certificate-blockchain-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
