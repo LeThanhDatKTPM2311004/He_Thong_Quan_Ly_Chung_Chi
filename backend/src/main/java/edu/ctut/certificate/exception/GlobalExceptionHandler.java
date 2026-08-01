@@ -11,10 +11,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
+        private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private ApiErrorResponse build(HttpServletRequest req, HttpStatus status, String code, String message,
                                     List<ApiErrorResponse.FieldError> fieldErrors) {
         return new ApiErrorResponse(
@@ -112,7 +113,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneric(Exception ex, HttpServletRequest req) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(build(req, HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Da xay ra loi khong xac dinh", null));
+            log.error("Loi khong xac dinh tai {}", req.getRequestURI(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(build(req, HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
+                                            "Da xay ra loi khong xac dinh", null));
     }
 }

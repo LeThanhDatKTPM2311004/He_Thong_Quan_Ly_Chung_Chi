@@ -4,6 +4,7 @@ import edu.ctut.certificate.domain.WalletNonce;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,9 +18,9 @@ public interface WalletNonceRepository extends JpaRepository<WalletNonce, Long> 
 
     @Modifying
     @Query("update WalletNonce n set n.used = true, n.usedAt = :now where n.walletAddress = :walletAddress and n.used = false")
-    int invalidateAllUnusedForWallet(String walletAddress, Instant now);
+    int invalidateAllUnusedForWallet(@Param("walletAddress") String walletAddress, @Param("now") Instant now);
 
     @Modifying
     @Query("delete from WalletNonce n where n.expiresAt < :threshold")
-    int deleteExpiredBefore(Instant threshold);
+    int deleteExpiredBefore(@Param("threshold") Instant threshold);
 }
