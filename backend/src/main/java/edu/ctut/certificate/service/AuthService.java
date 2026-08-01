@@ -5,6 +5,8 @@ import edu.ctut.certificate.domain.*;
 import edu.ctut.certificate.dto.*;
 import edu.ctut.certificate.exception.*;
 import edu.ctut.certificate.repository.WalletNonceRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,8 @@ import java.util.Base64;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final WalletNonceRepository nonceRepository;
     private final UserService userService;
@@ -34,7 +38,7 @@ public class AuthService {
     private long chainId;
 
     public AuthService(WalletNonceRepository nonceRepository, UserService userService,
-                        SignatureVerifier signatureVerifier, JwtService jwtService, AuditService auditService) {
+            SignatureVerifier signatureVerifier, JwtService jwtService, AuditService auditService) {
         this.nonceRepository = nonceRepository;
         this.userService = userService;
         this.signatureVerifier = signatureVerifier;
@@ -49,7 +53,6 @@ public class AuthService {
             throw new ValidationException("Dia chi vi khong hop le");
         }
 
-        // Vo hieu hoa moi nonce cu chua dung cua vi nay truoc khi phat nonce moi (chong tich luy nonce song song).
         nonceRepository.invalidateAllUnusedForWallet(address, Instant.now());
 
         String nonceValue = generateSecureNonce();
@@ -76,7 +79,6 @@ public class AuthService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    // Message toi thieu bind duoc domain, address, nonce, chainId va thoi han - tinh than SIWE/EIP-4361.
     private String buildSiweLikeMessage(String address, String nonce, Instant issuedAt, Instant expiresAt) {
         return domain + " muon ban dang nhap bang vi Ethereum:\n"
                 + address + "\n\n"
@@ -88,30 +90,39 @@ public class AuthService {
                 + "Expiration Time: " + expiresAt;
     }
 
-    /**
-     * Xac minh chu ky + nonce, tra JWT neu vi da co tai khoan ACTIVE.
-     * Neu vi chua dang ky -> UserNotFoundException (FE nen dieu huong sang man hinh dang ky STUDENT).
-     * Neu tai khoan dang PENDING/LOCKED -> ForbiddenOperationException.
-     */
+    private WalletNonce loadAndValidateNonce(String address, String nonceValue) {
+        WalletNonce nonce = nonceRepository.findByWalletAddressAndNonce(address, nonceValue)
+                .orElseThrow(() -> new NonceNotFoundException(
+                        "Khong tim thay nonce nay cho vi da cho - hay goi lai /api/auth/nonce"));
+
+        if (nonce.isUsed()) {
+            throw new NonceAlreadyUsedException("Nonce da duoc su dung");
+        }
+        if (Instant.now().isAfter(nonce.getExpiresAt())) {
+            throw new NonceExpiredException("Nonce da het han, vui long lay nonce moi");
+        }
+        return nonce;
+    }
+
     @Transactional
     public AuthResponse login(MetaMaskLoginRequest request) {
         String address = UserService.normalizeAddress(request.address());
 
-        WalletNonce nonce = nonceRepository.findAllByWalletAddressAndUsedFalse(address).stream()
-                .max((a, b) -> a.getIssuedAt().compareTo(b.getIssuedAt()))
-                .orElseThrow(() -> new WalletSignatureException("Chua co nonce nao duoc cap cho vi nay, hay goi /api/auth/nonce truoc"));
+        WalletNonce nonce = loadAndValidateNonce(address, request.nonce());
 
-        if (Instant.now().isAfter(nonce.getExpiresAt())) {
-            auditService.log(AuditAction.LOGIN_FAILED, null, address, "WalletNonce", String.valueOf(nonce.getId()), "Nonce het han");
-            throw new NonceExpiredException("Nonce da het han, vui long lay nonce moi");
-        }
-        if (nonce.isUsed()) {
-            throw new NonceAlreadyUsedException("Nonce da duoc su dung");
-        }
+        String recoveredAddress = signatureVerifier.recoverAddress(nonce.getMessage(), request.signature());
+        boolean signatureValid = recoveredAddress.equalsIgnoreCase(address);
 
-        boolean signatureValid = signatureVerifier.matches(nonce.getMessage(), request.signature(), address);
+        log.info("[LOGIN VERIFY] Expected address: {}", address);
+        log.info("[LOGIN VERIFY] Request nonce: {}", request.nonce());
+        log.info("[LOGIN VERIFY] Stored nonce: {}", nonce.getNonce());
+        log.info("[LOGIN VERIFY] Stored message: {}", nonce.getMessage());
+        log.info("[LOGIN VERIFY] Recovered address: {}", recoveredAddress);
+        log.info("[LOGIN VERIFY] Match: {}", signatureValid);
+
         if (!signatureValid) {
-            auditService.log(AuditAction.LOGIN_FAILED, null, address, "WalletNonce", String.valueOf(nonce.getId()), "Chu ky khong khop");
+            auditService.log(AuditAction.LOGIN_FAILED, null, address, "WalletNonce", String.valueOf(nonce.getId()),
+                    "Chu ky khong khop");
             throw new WalletSignatureException("Chu ky khong hop le hoac khong khop voi dia chi vi");
         }
 
@@ -131,7 +142,8 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(user);
-        auditService.log(AuditAction.LOGIN_SUCCESS, user.getId(), address, "AppUser", String.valueOf(user.getId()), null);
+        auditService.log(AuditAction.LOGIN_SUCCESS, user.getId(), address, "AppUser", String.valueOf(user.getId()),
+                null);
 
         return AuthResponse.of(token, jwtService.expirationSeconds(), toAuthenticatedUserResponse(user));
     }
@@ -140,17 +152,19 @@ public class AuthService {
     public AuthenticatedUserResponse registerStudent(StudentRegistrationRequest request) {
         String address = UserService.normalizeAddress(request.address());
 
-        WalletNonce nonce = nonceRepository.findAllByWalletAddressAndUsedFalse(address).stream()
-                .max((a, b) -> a.getIssuedAt().compareTo(b.getIssuedAt()))
-                .orElseThrow(() -> new WalletSignatureException("Chua co nonce nao duoc cap cho vi nay"));
+        WalletNonce nonce = loadAndValidateNonce(address, request.nonce());
 
-        if (Instant.now().isAfter(nonce.getExpiresAt())) {
-            throw new NonceExpiredException("Nonce da het han");
-        }
-        if (nonce.isUsed()) {
-            throw new NonceAlreadyUsedException("Nonce da duoc su dung");
-        }
-        if (!signatureVerifier.matches(nonce.getMessage(), request.signature(), address)) {
+        String recoveredAddress = signatureVerifier.recoverAddress(nonce.getMessage(), request.signature());
+        boolean signatureValid = recoveredAddress.equalsIgnoreCase(address);
+
+        log.info("[REGISTER VERIFY] Expected address: {}", address);
+        log.info("[REGISTER VERIFY] Request nonce: {}", request.nonce());
+        log.info("[REGISTER VERIFY] Stored nonce: {}", nonce.getNonce());
+        log.info("[REGISTER VERIFY] Stored message: {}", nonce.getMessage());
+        log.info("[REGISTER VERIFY] Recovered address: {}", recoveredAddress);
+        log.info("[REGISTER VERIFY] Match: {}", signatureValid);
+
+        if (!signatureValid) {
             throw new WalletSignatureException("Chu ky khong hop le");
         }
 

@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({ AuthenticationException.class, WalletSignatureException.class,
-                    NonceExpiredException.class, NonceAlreadyUsedException.class })
+                    NonceExpiredException.class, NonceAlreadyUsedException.class, NonceNotFoundException.class })
     public ResponseEntity<ApiErrorResponse> handleAuth(RuntimeException ex, HttpServletRequest req) {
             String code;
             if (ex instanceof WalletSignatureException) {
@@ -55,6 +55,8 @@ public class GlobalExceptionHandler {
                     code = "NONCE_EXPIRED";
             } else if (ex instanceof NonceAlreadyUsedException) {
                     code = "NONCE_ALREADY_USED";
+            } else if (ex instanceof NonceNotFoundException) {
+                    code = "NONCE_NOT_FOUND";
             } else {
                     code = "AUTHENTICATION_FAILED";
             }

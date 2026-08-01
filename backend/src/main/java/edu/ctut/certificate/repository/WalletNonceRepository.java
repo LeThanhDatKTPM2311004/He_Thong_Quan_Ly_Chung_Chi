@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface WalletNonceRepository extends JpaRepository<WalletNonce, Long> {
 
-    Optional<WalletNonce> findByNonceAndWalletAddress(String nonce, String walletAddress);
+    Optional<WalletNonce> findByWalletAddressAndNonce(String walletAddress, String nonce);
 
     List<WalletNonce> findAllByWalletAddressAndUsedFalse(String walletAddress);
 
