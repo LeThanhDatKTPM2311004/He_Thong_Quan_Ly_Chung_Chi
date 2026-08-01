@@ -29,7 +29,7 @@ public class SignatureVerifier {
             byte[] s = Arrays.copyOfRange(signatureBytes, 32, 64);
             Sign.SignatureData signatureData = new Sign.SignatureData(v, r, s);
 
-            BigInteger publicKey = Sign.signedMessageToKey(messageBytes, signatureData);
+            BigInteger publicKey = Sign.signedPrefixedMessageToKey(messageBytes, signatureData);
             return "0x" + Keys.getAddress(publicKey);
         } catch (WalletSignatureException e) {
             throw e;
