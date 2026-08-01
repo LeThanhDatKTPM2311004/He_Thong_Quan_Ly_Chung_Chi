@@ -16,6 +16,16 @@
             "projectName": "certificate-blockchain-service",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-CertificateBackendApplication<certificate-blockchain-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "edu.ctut.certificate.CertificateBackendApplication",
+            "projectName": "certificate-blockchain-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
