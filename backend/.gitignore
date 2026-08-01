@@ -1,6 +1,6 @@
 target/
-.mvn/
-.idea/
-*.class
+.env
 *.iml
+.idea/
 .vscode/
+*.log

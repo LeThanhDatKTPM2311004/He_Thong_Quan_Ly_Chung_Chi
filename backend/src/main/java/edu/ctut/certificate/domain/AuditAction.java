@@ -1,0 +1,14 @@
+package edu.ctut.certificate.domain;
+
+public enum AuditAction {
+    LOGIN_SUCCESS,
+    LOGIN_FAILED,
+    USER_CREATED,
+    USER_APPROVED,
+    ROLE_CHANGED,
+    USER_LOCKED,
+    CERTIFICATE_ISSUED,
+    CERTIFICATE_CONFIRMED,
+    CERTIFICATE_REVOKED,
+    BLOCKCHAIN_TRANSACTION_FAILED
+}
