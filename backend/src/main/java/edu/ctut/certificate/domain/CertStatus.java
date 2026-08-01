@@ -1,5 +1,5 @@
 package edu.ctut.certificate.domain;
 
 public enum CertStatus {
-    pending, confirmed, revoked
+    PENDING, CONFIRMED, REVOKE_PENDING, REVOKED, FAILED
 }

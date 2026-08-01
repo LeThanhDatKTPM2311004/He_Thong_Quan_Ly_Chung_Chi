@@ -1,49 +1,77 @@
 package edu.ctut.certificate.controller;
 
+import edu.ctut.certificate.config.JwtAuthFilter;
 import edu.ctut.certificate.domain.AppUser;
 import edu.ctut.certificate.domain.UserRole;
-import edu.ctut.certificate.repository.AppUserRepository;
+import edu.ctut.certificate.dto.*;
+import edu.ctut.certificate.exception.ValidationException;
+import edu.ctut.certificate.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "Users", description = "Quan ly tai khoan - chi ADMIN")
 public class UserController {
 
-    private final AppUserRepository repository;
+    private final UserService userService;
 
-    public UserController(AppUserRepository repository) {
-        this.repository = repository;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAll() {
-        return repository.findAll().stream().map(u -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", u.getId());
-            map.put("name", u.getName());
-            map.put("email", u.getEmail() == null ? "" : u.getEmail());
-            map.put("role", u.getRole().toString());
-            return map;
-        }).toList();
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Danh sach tat ca user (ADMIN)")
+    public List<UserResponse> getAll() {
+        return userService.getAll().stream().map(userService::toResponse).toList();
     }
 
-    // Khop voi muc 6: admin gan role issuer/admin cho user khac
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "ADMIN tao truoc tai khoan ISSUER/ADMIN gan voi mot dia chi vi")
+    public UserResponse createUser(@Valid @RequestBody CreateUserRequest request, Authentication auth) {
+        AppUser saved = userService.createUserByAdmin(request, currentUserId(auth));
+        return userService.toResponse(saved);
+    }
+
+    @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Duyet tai khoan STUDENT dang PENDING")
+    public UserResponse approve(@PathVariable Long id, Authentication auth) {
+        AppUser saved = userService.approveUser(id, currentUserId(auth));
+        return userService.toResponse(saved);
+    }
+
     @PutMapping("/{id}/role")
-    public Map<String, Object> updateRole(@PathVariable Long id,
-            @RequestBody Map<String, String> body,
-            @RequestHeader(value = "X-User-Role", required = false) String callerRole) {
-        if (!"admin".equals(callerRole)) {
-            throw new RuntimeException("Chi admin moi duoc gan role");
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Doi role cua mot user (khong the ha admin cuoi cung)")
+    public UserResponse updateRole(@PathVariable Long id, @Valid @RequestBody UpdateUserRoleRequest body, Authentication auth) {
+        UserRole newRole;
+        try {
+            newRole = UserRole.valueOf(body.role());
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Role khong hop le");
         }
-        AppUser user = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Khong tim thay user"));
-        UserRole newRole = UserRole.valueOf(body.get("role"));
-        user.setRole(newRole);
-        repository.save(user);
-        return Map.of("id", user.getId(), "role", user.getRole().toString());
+        AppUser saved = userService.updateRole(id, newRole, currentUserId(auth));
+        return userService.toResponse(saved);
+    }
+
+    @PutMapping("/{id}/lock")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Khoa tai khoan")
+    public UserResponse lock(@PathVariable Long id, Authentication auth) {
+        AppUser saved = userService.lockUser(id, currentUserId(auth));
+        return userService.toResponse(saved);
+    }
+
+    private Long currentUserId(Authentication auth) {
+        return ((JwtAuthFilter.AuthenticatedPrincipal) auth.getPrincipal()).userId();
     }
 }

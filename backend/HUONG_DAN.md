@@ -1,23 +1,49 @@
-# Backend - He Thong Quan Ly Chung Chi (Blockchain)
+# Hướng dẫn chạy Backend
 
-## Cach dung file zip nay
+## 1. Yêu cầu
 
-1. Giai nen file zip nay ra 1 thu muc rieng (KHONG giai nen de vao project cu neu con giu lai, tranh trung file).
-2. Mo thu muc do bang VS Code / IntelliJ.
-3. File nay CHUA co `.mvn` va `mvnw` (Maven Wrapper) - neu can, copy 2 file `mvnw`, `mvnw.cmd` va thu muc `.mvn` tu project cu (ban da tao truoc do) vao day. Hoac tao lai bang lenh: `mvn -N io.takari:maven:wrapper` (can May da cai Maven).
-4. Sua file `src/main/resources/application.properties`:
-   - `spring.datasource.password=` -> dien mat khau MySQL cua ban (neu co).
-5. Neu muon dung Web3j/Sepolia that, dien 3 dong cuoi file `application.properties`:
-   - `web3.rpc-url` -> RPC URL tu Infura/Alchemy
-   - `web3.contract-address` -> dia chi smart contract da deploy tren Remix
-   - `web3.private-key` -> private key vi server (KHONG commit len git!)
-6. Chay lenh: `.\mvnw.cmd clean install -U` (Windows) de tai dependency va build.
-7. Chay app bang IDE (nut Run) hoac `.\mvnw.cmd spring-boot:run`.
-8. Swagger UI: http://localhost:5000/swagger-ui/index.html
+- Java 17
+- MySQL 8 đang chạy local (hoặc chỉnh `DB_URL` trỏ tới MySQL khác)
+- (Tuỳ chọn) RPC Sepolia (Alchemy/Infura) + contract đã deploy + ví server có Sepolia ETH, nếu muốn thử nghiệm phần blockchain thật
 
-## Luu y
+## 2. Cấu hình biến môi trường
 
-- Neu chua co du lieu Web3j (rpc-url/contract-address/private-key de trong), app van chay va bien dich duoc,
-  nhung goi cac API `/api/certificates` (POST/verify/revoke) se bao loi vi khong ket noi duoc blockchain that.
-- Nho tao it nhat 1 user mau trong bang `users` (qua MySQL Workbench) truoc khi test dang nhap email/password.
-- Contract Solidity mau (de deploy tren Remix) da duoc gui rieng trong chat, dat ten file `CertificateRegistry.sol`.
+Copy `.env.example` thành `.env` (không commit) rồi điền giá trị thật, hoặc set trực tiếp trong PowerShell:
+
+```powershell
+$env:DB_URL="jdbc:mysql://localhost:3306/certificate_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true"
+$env:DB_USERNAME="root"
+$env:DB_PASSWORD="mat-khau-that-cua-ban"
+$env:SEPOLIA_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/API-KEY-MOI"
+$env:CONTRACT_ADDRESS="0x..."
+$env:SERVER_WALLET_PRIVATE_KEY="0x..."
+$env:JWT_SECRET="chuoi-random-it-nhat-32-ky-tu"
+$env:DEMO_ADMIN_WALLET="0x..."
+$env:DEMO_ISSUER_WALLET="0x..."
+$env:DEMO_STUDENT_WALLET="0x..."
+$env:DEMO_STUDENT_ID="2311004"
+./mvnw spring-boot:run
+```
+
+**Quan trọng:** private key/API key cũ đã từng hardcode trong source (đã bị lộ) — phải tạo API key Alchemy mới và ví server mới trước khi dùng thật, xem mục 3.3 trong file yêu cầu.
+
+## 3. Nếu chưa cấu hình Web3j/Sepolia
+
+App vẫn khởi động và chạy bình thường (đăng nhập MetaMask, quản lý user vẫn hoạt động). Các API liên quan blockchain (`POST /api/certificates`, `POST /api/certificates/{certId}/revoke`, `GET /api/certificates/verify`) sẽ trả **503 BLOCKCHAIN_NOT_CONFIGURED** thay vì âm thầm dùng ví giả như code cũ.
+
+## 4. Base URL
+
+```
+http://localhost:5000
+```
+
+Swagger UI: `http://localhost:5000/swagger-ui.html`
+
+## 5. Build & test
+
+```powershell
+./mvnw clean test
+./mvnw clean package
+```
+
+> Lưu ý: môi trường tạo bộ code này không có Maven Central / MySQL / RPC Sepolia thật để tự chạy lệnh trên, nên **chưa có output build/test thật kèm theo**. Bạn cần tự chạy 2 lệnh trên ở máy có mạng đầy đủ và dán log vào báo cáo (mục D trong file yêu cầu của nhóm trưởng).

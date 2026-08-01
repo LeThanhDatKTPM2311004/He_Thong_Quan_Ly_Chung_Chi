@@ -1,15 +1,24 @@
 package edu.ctut.certificate.controller;
 
-import edu.ctut.certificate.domain.CertificateBlock;
+import edu.ctut.certificate.config.JwtAuthFilter;
+import edu.ctut.certificate.domain.Certificate;
+import edu.ctut.certificate.dto.*;
 import edu.ctut.certificate.service.CertificateService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/certificates")
+@Tag(name = "Certificates", description = "Phat hanh / tra cuu / thu hoi chung chi tren Sepolia")
 public class CertificateController {
 
     private final CertificateService certificateService;
@@ -19,76 +28,50 @@ public class CertificateController {
     }
 
     @PostMapping
-    public Map<String, Object> issue(@RequestBody Map<String, String> body,
-            @RequestHeader(value = "X-User-Role", required = false) String role) throws Exception {
-        checkIssuerOrAdmin(role);
-        CertificateBlock block = certificateService.issueCertificate(
-                body.get("studentId"), body.get("fullName"), body.get("degree"),
-                body.get("grade"), body.get("issueDate"), body.get("faculty"));
-        return Map.of("txHash", block.getTxHash(), "status", block.getStatus().toString());
+    @PreAuthorize("hasAnyRole('ADMIN','ISSUER')")
+    @Operation(summary = "Phat hanh chung chi moi (ghi giao dich that len Sepolia)")
+    public IssueCertificateResponse issue(@Valid @RequestBody IssueCertificateRequest request, Authentication auth) {
+        return certificateService.issueCertificate(request, currentUserId(auth));
     }
 
     @GetMapping("/{txHash}/status")
-    public Map<String, Object> confirm(@PathVariable String txHash) throws Exception {
-        CertificateBlock block = certificateService.confirmCertificate(txHash);
-        return Map.of("txHash", block.getTxHash(), "status", block.getStatus().toString());
+    @Operation(summary = "Kiem tra trang thai giao dich (issue hoac revoke) tren chain - cong khai")
+    public TransactionStatusResponse status(@PathVariable String txHash) {
+        return certificateService.confirmTransaction(txHash);
     }
 
     @GetMapping("/verify")
-    public Object verify(@RequestParam String query) throws Exception {
-        CertificateBlock block = certificateService.verifyCertificate(query);
-        if (block == null)
-            return null;
-        return Map.of(
-                "id", block.getCertId(),
-                "holder", block.getFullName(),
-                "degree", block.getDegree(),
-                "issuedBy", block.getIssuedBy(),
-                "issueDate", block.getIssueDate(),
-                "faculty", block.getFaculty(),
-                "txHash", block.getTxHash(),
-                "ipfsDoc", block.getIpfsDoc(),
-                "status", block.getStatus().toString());
+    @Operation(summary = "Tra cuu + doi chieu du lieu DB voi on-chain - cong khai")
+    public VerifyCertificateResponse verify(@RequestParam String query) {
+        return certificateService.verifyCertificate(query);
     }
 
     @PostMapping("/{certId}/revoke")
-    public Map<String, Object> revoke(@PathVariable String certId, @RequestBody Map<String, String> body,
-            @RequestHeader(value = "X-User-Role", required = false) String role) throws Exception {
-        checkIssuerOrAdmin(role);
-        boolean success = certificateService.revokeCertificate(certId, body.get("reason"));
-        return Map.of("success", success);
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Thu hoi chung chi (ghi giao dich that len Sepolia)")
+    public RevokeCertificateResponse revoke(@PathVariable String certId, @Valid @RequestBody RevokeCertificateRequest body,
+                                             Authentication auth) {
+        return certificateService.revokeCertificate(certId, body.reason(), currentUserId(auth));
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAll() {
-        return certificateService.getAllCertificates().stream().map(block -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", block.getCertId());
-            map.put("student", block.getFullName());
-            map.put("degree", block.getDegree());
-            map.put("date", block.getIssueDate());
-            map.put("status", block.getStatus().toString());
-            return map;
-        }).toList();
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Danh sach chung chi (phan trang)")
+    public Page<CertificateResponse> getAll(@RequestParam(defaultValue = "0") int page,
+                                             @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Certificate> result = certificateService.getAllPaged(pageable);
+        return result.map(certificateService::toResponse);
     }
 
     @GetMapping("/student/{studentId}")
-    public List<Map<String, Object>> getByStudent(@PathVariable String studentId) {
-        return certificateService.getByStudentId(studentId).stream().map(block -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", block.getCertId());
-            map.put("title", block.getDegree());
-            map.put("institution", block.getIssuedBy());
-            map.put("date", block.getIssueDate());
-            map.put("grade", block.getGrade());
-            map.put("hash", block.getHash());
-            return map;
-        }).toList();
+    @PreAuthorize("hasAnyRole('ADMIN','ISSUER') or (hasRole('STUDENT') and #studentId == principal.studentId)")
+    @Operation(summary = "Danh sach chung chi cua mot sinh vien - STUDENT chi xem duoc cua chinh minh")
+    public List<CertificateResponse> getByStudent(@PathVariable String studentId) {
+        return certificateService.getByStudentId(studentId).stream().map(certificateService::toResponse).toList();
     }
 
-    private void checkIssuerOrAdmin(String role) {
-        if (!"admin".equals(role) && !"issuer".equals(role)) {
-            throw new RuntimeException("Khong co quyen thuc hien thao tac nay");
-        }
+    private Long currentUserId(Authentication auth) {
+        return ((JwtAuthFilter.AuthenticatedPrincipal) auth.getPrincipal()).userId();
     }
 }
