@@ -23,7 +23,7 @@ public class WalletNonce {
     private String nonce;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "MEDIUMTEXT")
     private String message;
 
     private Instant issuedAt;
