@@ -1,22 +1,28 @@
-// Các kiểu dữ liệu dùng chung trong toàn bộ ứng dụng
-
 export type UserRole = "admin" | "issuer" | "student";
 
 export interface AuthUser {
-  address: string | null; // địa chỉ ví, null nếu đăng nhập bằng email
+  id?: number | string;
+  studentId?: string | null;
+  address: string | null;
   email: string | null;
   name: string;
   role: UserRole;
+  token?: string | null;
 }
 
-export type CertStatus = "confirmed" | "pending" | "revoked";
+export type CertStatus = "confirmed" | "pending" | "revoked" | "failed";
 
 export interface CertificateSummary {
   id: string;
+  certId?: string;
   student: string;
+  studentId?: string;
   degree: string;
   date: string;
+  issueDate?: string;
   status: CertStatus;
+  txHash?: string;
+  faculty?: string;
 }
 
 export interface CertificateFull extends CertificateSummary {
@@ -31,7 +37,10 @@ export interface MyCertificate {
   date: string;
   grade: string;
   hash: string;
+  status?: CertStatus;
 }
+
+export type ScreenPath = "/dashboard" | "/issue" | "/manage-certificates" | "/certificates" | "/verify" | "/admin" | "/profile";
 
 export interface AppUser {
   name: string;
@@ -39,11 +48,3 @@ export interface AppUser {
   role: "Admin" | "Issuer" | "Student" | "Verifier";
   status: "active" | "pending";
 }
-
-// Danh sách route hợp lệ trong app (dùng cho sidebar/nav)
-export type ScreenPath =
-  | "/dashboard"
-  | "/issue"
-  | "/certificates"
-  | "/verify"
-  | "/admin";

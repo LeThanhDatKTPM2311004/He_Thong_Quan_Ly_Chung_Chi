@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileBadge, Award, ShieldCheck, Settings } from "lucide-react";
+import { LayoutDashboard, FileBadge, Award, ShieldCheck, Settings, ListChecks } from "lucide-react";
 import type { ReactNode } from "react";
 import type { UserRole } from "../types";
 
@@ -13,12 +13,14 @@ export const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   admin: [
     { path: "/dashboard", label: "Bảng điều khiển", icon: <LayoutDashboard size={18} /> },
     { path: "/issue", label: "Cấp chứng chỉ", icon: <FileBadge size={18} /> },
+    { path: "/manage-certificates", label: "Quản lý chứng chỉ", icon: <ListChecks size={18} /> },
     { path: "/verify", label: "Tra cứu chứng chỉ", icon: <ShieldCheck size={18} /> },
     { path: "/admin", label: "Quản trị", icon: <Settings size={18} /> },
   ],
   issuer: [
     { path: "/dashboard", label: "Bảng điều khiển", icon: <LayoutDashboard size={18} /> },
     { path: "/issue", label: "Cấp chứng chỉ", icon: <FileBadge size={18} /> },
+    { path: "/manage-certificates", label: "Quản lý chứng chỉ", icon: <ListChecks size={18} /> },
     { path: "/verify", label: "Tra cứu chứng chỉ", icon: <ShieldCheck size={18} /> },
   ],
   student: [
@@ -36,8 +38,8 @@ export const DEFAULT_ROUTE_BY_ROLE: Record<UserRole, string> = {
 
 // Danh sách route mà mỗi role được phép truy cập (dùng cho ProtectedRoute)
 export const ALLOWED_ROUTES_BY_ROLE: Record<UserRole, string[]> = {
-  admin: ["/dashboard", "/issue", "/verify", "/admin", "/certificates", "/profile"],
-  issuer: ["/dashboard", "/issue", "/verify", "/profile"],
+  admin: ["/dashboard", "/issue", "/manage-certificates", "/verify", "/admin", "/certificates", "/profile"],
+  issuer: ["/dashboard", "/issue", "/manage-certificates", "/verify", "/profile"],
   student: ["/certificates", "/verify", "/profile"],
 };
 

@@ -1,59 +1,57 @@
-// =============================================================================
-// LỚP GỌI API XÁC THỰC (AUTH) — ĐÃ NỐI VÀO BACKEND THẬT
-// -----------------------------------------------------------------------------
-// Backend: Spring Boot (edu.ctut.certificate), xem AuthController.java
-//   POST /api/auth/wallet-login   body: { address }        -> AuthUser
-//   POST /api/auth/login          body: { email, password } -> AuthUser
-// Địa chỉ API cấu hình qua biến môi trường VITE_API_BASE_URL (file .env).
-// =============================================================================
-
 import type { AuthUser, UserRole } from "../types";
 import { apiFetch, API_BASE_URL } from "./httpClient";
-
 export { API_BASE_URL };
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+type BackendRole = "ADMIN" | "ISSUER" | "STUDENT" | string;
+interface BackendUserDto {
+  id?: number | string;
+  walletAddress?: string | null;
+  address?: string | null;
+  fullName?: string | null;
+  name?: string | null;
+  studentId?: string | null;
+  role?: BackendRole;
+  status?: string;
+}
+interface BackendAuthResponse {
+  token?: string;
+  tokenType?: string;
+  expiresInSeconds?: number;
+  user?: BackendUserDto;
 }
 
-/**
- * Đăng nhập bằng ví đã kết nối (MetaMask).
- * Backend sẽ tự tạo user mới với role "student" nếu địa chỉ ví chưa tồn tại.
- */
-export async function loginWithWallet(address: string): Promise<AuthUser> {
-  return apiFetch<AuthUser>("/api/auth/wallet-login", {
-    method: "POST",
-    body: { address },
-  });
-}
+export interface AuthResponse extends AuthUser { token?: string | null; status?: string; }
+export interface RegisterPayload { address: string; signature: string; nonce: string; fullName: string; studentId: string; }
 
-/** Đăng nhập bằng email/mật khẩu (dành cho sinh viên). */
-export async function loginWithEmail(email: string, password: string): Promise<AuthUser> {
-  if (!email.includes("@")) {
-    throw new Error("Email không hợp lệ");
-  }
-  return apiFetch<AuthUser>("/api/auth/login", {
-    method: "POST",
-    body: { email, password },
-  });
-}
+const normalizeRole = (role?: string): UserRole => {
+  const value = (role ?? "STUDENT").toLowerCase();
+  return value === "admin" || value === "issuer" ? value : "student";
+};
 
-/**
- * Đăng nhập nhanh theo role — CHỈ DÙNG ĐỂ DEMO/TEST giao diện khi backend
- * chưa sẵn sàng hoặc chưa có tài khoản tương ứng trong database.
- * Có thể xoá nút demo này ở LoginPage.tsx khi không cần nữa.
- */
-export async function loginAsDemoRole(role: UserRole): Promise<AuthUser> {
-  await delay(300);
-  const names: Record<UserRole, string> = {
-    admin: "Dr. Chen Wei",
-    issuer: "Prof. Maria Santos",
-    student: "Amara Osei",
-  };
+function normalizeUser(dto: BackendUserDto = {}, token?: string | null): AuthResponse {
+  const address = dto.walletAddress ?? dto.address ?? null;
   return {
-    address: role === "student" ? null : "0x3Fa8...B2c1",
-    email: role === "student" ? "a.osei@student.whitmore.edu" : null,
-    name: names[role],
-    role,
+    id: dto.id,
+    studentId: dto.studentId ?? null,
+    address,
+    email: null,
+    name: dto.fullName ?? dto.name ?? (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Người dùng"),
+    role: normalizeRole(dto.role),
+    token: token ?? null,
+    status: dto.status,
   };
+}
+
+export async function getWalletNonce(address: string): Promise<{ address?: string; nonce: string; message: string; issuedAt?: string; expiresAt?: string }> {
+  return apiFetch(`/api/auth/nonce?address=${encodeURIComponent(address)}`);
+}
+
+export async function loginWithWallet(address: string, signature: string, nonce: string): Promise<AuthResponse> {
+  const result = await apiFetch<BackendAuthResponse>("/api/auth/metamask-login", { method: "POST", body: { address, signature, nonce } });
+  return normalizeUser(result.user, result.token);
+}
+
+export async function registerStudent(payload: RegisterPayload): Promise<AuthResponse> {
+  const result = await apiFetch<BackendUserDto>("/api/auth/register", { method: "POST", body: payload });
+  return normalizeUser(result);
 }

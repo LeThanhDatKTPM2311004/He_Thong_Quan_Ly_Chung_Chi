@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, CheckCircle2, RefreshCw, Hash, BookOpen, AlertTriangle } from "lucide-react";
+import { CheckCircle2, RefreshCw, Database, BookOpen, AlertTriangle } from "lucide-react";
 import { Modal } from "../components/common/Modal";
 import * as certificateApi from "../services/certificateApi";
 import type { IssueCertificatePayload } from "../services/certificateApi";
@@ -8,8 +8,6 @@ export function IssueCertificatePage() {
   const [txStatus, setTxStatus] = useState<null | "pending" | "confirmed">(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +21,7 @@ export function IssueCertificatePage() {
   });
 
   function handleSubmit() {
-    if (!form.studentId || !form.fullName || !form.issueDate) {
+    if (!form.studentId.trim() || !form.fullName.trim() || !form.degree.trim() || !form.faculty.trim() || !form.issueDate) {
       setError("Vui lòng điền đầy đủ các trường bắt buộc (*).");
       return;
     }
@@ -37,7 +35,14 @@ export function IssueCertificatePage() {
     setTxStatus("pending");
     setError(null);
     try {
-      const result = await certificateApi.issueCertificate({ ...form, fileName });
+      const result = await certificateApi.issueCertificate({
+        ...form,
+        studentId: form.studentId.trim(),
+        fullName: form.fullName.trim(),
+        degree: form.degree.trim(),
+        grade: form.grade.trim(),
+        faculty: form.faculty.trim(),
+      });
       setTxHash(result.txHash);
       const confirmed = await certificateApi.waitForConfirmation(result.txHash);
       setTxStatus(confirmed.status === "confirmed" ? "confirmed" : "pending");
@@ -151,7 +156,7 @@ export function IssueCertificatePage() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground block mb-1.5">Khoa / Viện cấp</label>
+            <label className="text-sm font-medium text-foreground block mb-1.5">Khoa / Viện cấp <span className="text-red-500">*</span></label>
             <input
               value={form.faculty}
               onChange={(e) => updateField("faculty", e.target.value)}
@@ -161,30 +166,17 @@ export function IssueCertificatePage() {
           </div>
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-foreground block mb-1.5">Tài liệu chứng chỉ (PDF)</label>
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => { e.preventDefault(); setDragOver(false); setFileName(e.dataTransfer.files[0]?.name ?? null); }}
-            className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer
-              ${dragOver ? "border-[#1E3A8A] bg-[#EFF6FF]" : "border-border hover:border-[#93C5FD] hover:bg-muted/30"}`}
-          >
-            <Upload size={24} className="mx-auto text-muted-foreground mb-2" />
-            {fileName ? (
-              <p className="text-sm font-medium text-[#1E3A8A]">{fileName}</p>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">Kéo & thả file PDF vào đây, hoặc <span className="text-[#1E3A8A] font-medium">chọn file</span></p>
-                <p className="text-xs text-muted-foreground mt-1">PDF tối đa 10MB — sẽ được băm (hash) và lưu trữ</p>
-              </>
-            )}
+        <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-50 border border-blue-200">
+          <Database size={16} className="text-blue-700 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-blue-900">Backend hiện chưa hỗ trợ tải tệp PDF</p>
+            <p className="text-xs text-blue-700 mt-1 leading-relaxed">Hệ thống chỉ nhận dữ liệu chứng chỉ ở dạng JSON, tự tạo mã băm dữ liệu và ghi giao dịch lên Sepolia. Không có endpoint multipart hoặc trường đường dẫn tệp trong API cấp chứng chỉ.</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
-          <Hash size={14} className="text-muted-foreground shrink-0" />
-          <span className="text-xs text-muted-foreground">Chứng chỉ sẽ được băm (SHA-256) và ghi vào chuỗi khối nội bộ của hệ thống.</span>
+          <Database size={14} className="text-muted-foreground shrink-0" />
+          <span className="text-xs text-muted-foreground">Backend sẽ băm dữ liệu chứng chỉ và gửi giao dịch thật lên mạng Sepolia.</span>
         </div>
 
         <div className="flex items-center gap-3 pt-1">
